@@ -1,0 +1,6 @@
+<% if @username %>
+Welcome <%= @username %>  <a href="/logout">Logout</a> | <a href="/newpost">New Post</a>
+<% else %>
+Welcome guest <a href="/login">Login</a> | <a href="/signup">Signup</a>
+<% end %>
+<h1>Blog powered by mongo and sinatra</h1>
