@@ -1,6 +1,30 @@
-<% if @username %>
-Welcome <%= @username %>  <a href="/logout">Logout</a> | <a href="/newpost">New Post</a>
+<% if username %>
+Welcome <%= username %>  <a href="/logout">Logout</a> | <a href="/newpost">New Post</a>
 <% else %>
 Welcome guest <a href="/login">Login</a> | <a href="/signup">Signup</a>
 <% end %>
 <h1>Blog powered by mongo and sinatra</h1>
+<% unless posts.empty? %>
+  <% posts.each do |post| %>
+    <h2><a href="/post/<%= post['permalink'] %>"><%= post['title'] %></a></h2>
+    Posted <%= post['post_date'] %> <i>By <%= post['author'] %></i><br>
+    Comments:
+    <% unless post['comments'].empty? %>
+    <% num_comments = post['comments'].length %>
+    <% else %>
+    <% num_comments = 0 %>
+    <% end %>
+    <a href="/post/<%= post['permalink'] %>"><%= num_comments %></a>
+    <hr>
+    <%= post['body'] %>
+    <p>
+    <p>
+    <em>Filed under:</em>
+    <% unless post['tags'].empty? %>
+      <%= post['tags'].join(',') %>
+    <% else %>
+      <%= none %>
+    <% end %>
+    <p>
+  <% end %>
+<% end %>

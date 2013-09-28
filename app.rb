@@ -2,6 +2,7 @@ require 'sinatra'
 
 require File.join(File.dirname(__FILE__) + '/models/sessions')
 require File.join(File.dirname(__FILE__) + '/models/users')
+require File.join(File.dirname(__FILE__) + '/models/posts')
 
 class App < Sinatra::Base
 
@@ -13,6 +14,7 @@ class App < Sinatra::Base
     # Models
     @users = UserDAO.new(database)
     @sessions = SessionDAO.new(database)
+    @posts = PostsDAO.new(database)
 
     # Session Timeout
     @@expiration_date = Time.now + (60 * 2)
@@ -20,8 +22,100 @@ class App < Sinatra::Base
 
   get '/' do
     cookie = request.cookies['user_session'] || nil
-    @username = @sessions.get_username(cookie)
-    erb :index
+    username = @sessions.get_username(cookie)
+    # even if there is no user logged in, we can show the blog
+    posts = @posts.get_posts(10)
+
+    erb :index, :locals => {:username => username, :posts => posts}
+  end
+
+  get '/post/:permalink' do |permalink|
+    cookie = request.cookies['user_session']
+    username = @sessions.get_username(cookie)
+    puts "about to query on permalink = #{permalink}"
+    post = @posts.get_post_by_permalink(permalink)
+    if post
+      erb :entry_template,
+          :layout => :layout_post,
+          :locals => {
+            :post => post,
+            :username => username, 
+            :errors => ""
+          }
+    else
+      redirect '/post_not_found'  
+    end
+  end
+
+  post '/newcomment' do
+    name = params[:commentName]
+    email = params[:commentEmail]
+    body = params[:commentBody]
+    permalink = params[:permalink]
+
+    post = @posts.get_post_by_permalink(permalink)
+    cookie = request.cookies['user_session']
+    username = @sessions.get_username(cookie)
+
+    unless post
+      redirect '/post_not_found'
+    end
+
+    if name == '' or body == ''
+      errors = "Post must contain your name and an acutal comment"
+      return erb  :entry_template, 
+                  :layout => :layout_post,
+                  :locals => {
+                    :post => post,
+                    :username => username,
+                    :errors => errors
+                  }
+    else
+      @posts.add_comment(permalink, name, email, body)
+      redirect "/post/#{permalink}"
+    end
+  end
+
+  get '/newpost' do
+    cookie = request.cookies['user_session']
+    username = @sessions.get_username(cookie)
+
+    unless username
+      redirect '/login'
+    end
+
+    erb :newpost, 
+        :locals => {
+          :username => username,
+          :errors => ''
+        }
+  end
+
+  post '/newpost' do
+    title = params[:subject]
+    post = params[:body]
+    tags = params[:tags]
+
+    cookie = request.cookies['user_session']
+    username = @sessions.get_username(cookie)
+
+    unless username
+      redirect '/login'
+    end
+
+    if title == '' or post == ''
+      errors = "Post must contain a title and blog entry"
+      return erb  :newpost,
+                  :locals => {
+                    :username => username,
+                    :errors => errors
+                  }
+    else
+      tags_array = tags.split(',')
+      permalink = @posts.insert_entry(title, post, tags_array, username)
+      redirect "/post/#{permalink}"
+    end
+
   end
 
   get '/signup' do
@@ -45,7 +139,7 @@ class App < Sinatra::Base
       response.set_cookie(
           'user_session', 
           :value => cookie, 
-          :expires => @@expiration_date,
+          # :expires => @@expiration_date,
           :path => '/'
         )
       redirect '/welcome'
@@ -56,6 +150,10 @@ class App < Sinatra::Base
 
   get '/internal_error' do
     "Error: System has encounterd a DB error"
+  end
+
+  get '/post_not_found' do
+    "Error: Sorry, post not found"
   end
 
   get '/logout' do
@@ -89,7 +187,7 @@ class App < Sinatra::Base
       response.set_cookie(
           'user_session', 
           :value => session_id, 
-          :expires => @@expiration_date,
+          # :expires => @@expiration_date,
           :path => '/'
         )
       redirect '/welcome'

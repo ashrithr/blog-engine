@@ -13,7 +13,11 @@ class SessionDAO
     session_id = rand(36**32).to_s(36) # random string of length 32
     session = {'username' => username, '_id' => session_id}
     begin
-      @sessions.insert(session)
+      # 'save' is safer than insert, if the document already has an '_id' key, 
+      # then an update (upsert) operation will be performed, and any existing 
+      # document with that _id is overwritten. Otherwise an insert operation is 
+      # performed.
+      @sessions.save(session)
     rescue
       puts "Unexpected error on start_session: #{$!}"
       return nil

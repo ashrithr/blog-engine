@@ -1,0 +1,48 @@
+<% if username %>
+Welcome <%= username %>  <a href="/logout">Logout</a> | <a href="/newpost">New Post</a> | <a href="/">Home</a>
+<% else %>
+Welcome guest <a href="/login">Login</a> | <a href="/signup">Signup</a> | <a href="/">Home</a>
+<% end %>
+<h1>Blog powered by mongo and sinatra</h1>
+
+<h2><%= post['title'] %></h2>
+Posted <%= post['post_date'] %> <i>By <%= post['author'] %></i><br>
+<hr>
+<%= post['body'] %>
+<p>
+<em>Filed under:</em>
+<% unless post['tags'].empty? %>
+  <%= post['tags'].join(',') %>
+<% else %>
+  <%= none %>
+<% end %>
+<p>
+Comments:
+<ul>
+<% unless post['comments'].empty? %>
+<% num_comments = post['comments'].length %>
+<% else %>
+<% num_comments = 0 %>
+<% end %>
+Total Comments: <%= num_comments %>
+<p>
+<% post['comments'].each do |comment| %>
+Author: <%= comment['author'] %><br>
+Comment: <%= comment['body'] %><br>
+<p>
+<% end %>
+<hr>
+
+<h3>Add a comment</h3>
+<form method="post" action="/newcomment">
+  <input type="hidden" name="permalink" id="permalink" value="<%= post['permalink'] %>">
+  <p class="error"><%= errors %></p>
+  <b>Name</b> (required)<br>
+  <input type="text" name="commentName" size="60" id="commentName"><br>
+  <b>Email</b> (optional)<br>
+  <input type="text" name="commentEmail" size="60" id="commentEmail"><br>
+  <b>Comment</b> (required)<br>
+  <textarea name="commentBody" size="60" rows="10" id="commentBody"></textarea><br>
+  <input type="submit">
+</form>
+</ul>
